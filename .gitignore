@@ -341,7 +341,7 @@ ASALocalRun/
 
 # End of https://www.gitignore.io/api/csharp
 
-CustomCloudWatchMetric/bin
-CustomCloudWatchMetric/obj
+CustomCloudWatchMetricStack/bin
+CustomCloudWatchMetricStack/obj
 CustomMetricLambda/bin
 CustomMetricLambda/obj
