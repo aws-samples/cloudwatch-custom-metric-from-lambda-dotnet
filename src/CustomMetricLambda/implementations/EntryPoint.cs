@@ -1,42 +1,32 @@
-using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
+using Amazon.Lambda.CloudWatchEvents;
+using Amazon.Lambda.Core;
+
 using Amazon.CloudWatch.Model;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Amazon.ECS;
 using Amazon.CloudWatch;
-using Amazon.Lambda.CloudWatchEvents;
-
-// Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
-[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+using Microsoft.Extensions.Configuration;
 
 namespace CustomMetricLambda;
 
-public class CustomMetricLambda
+internal class EntryPoint : IEntryPoint
 {
 
-    private readonly AmazonCloudWatchClient _cloudwatchClient;
+    private readonly IAmazonCloudWatch _cloudwatchClient;
+    private readonly IAmazonSQS _sqsClient;
+    private readonly IAmazonECS _ecsClient;
+    private readonly IConfiguration _configuration;
 
-    private readonly AmazonSQSClient _sqsClient;
-    private readonly AmazonECSClient _ecsClient;
-    private readonly string _clusterName;
+    public EntryPoint(IConfiguration configuration, IAmazonCloudWatch cloudwatchClient, IAmazonSQS sqsClient, IAmazonECS ecsClient){
 
-    private readonly string _serviceName;
-    private readonly string _queueUrl;
+        _configuration = configuration;
+        _cloudwatchClient = cloudwatchClient;
+        _sqsClient = sqsClient;
+        _ecsClient = ecsClient;
 
-    public CustomMetricLambda()
-    {
-
-            _sqsClient = new AmazonSQSClient();
-            _cloudwatchClient = new AmazonCloudWatchClient();
-            _ecsClient = new AmazonECSClient();
-
-            // Read environment variables from Lambda environment
-            _clusterName = Environment.GetEnvironmentVariable("ECS_CLUSTER_NAME") ?? "";
-            _serviceName = Environment.GetEnvironmentVariable("ECS_SERVICE_NAME") ?? "";
-            _queueUrl = Environment.GetEnvironmentVariable("QUEUE_URL") ?? "";
-    } 
-
+    }
     /// <summary>
     /// A function that will be invoked by EventBridge every ____  to determine if a scaling event is needed
     /// This function assumes you have 3 lambda environment variables set: ECS_CLUSTER_NAME, ECS_SERVICE_NAME and QUEUE_URL.
@@ -44,7 +34,7 @@ public class CustomMetricLambda
     /// <param name="request"></param>
     /// <param name="context"></param>
     /// <returns>200 if successfully published cloudwatch metric. 400 if error</returns>
-    public async Task<APIGatewayProxyResponse> FunctionHandler(CloudWatchEvent<object> request, ILambdaContext context)
+    public async Task<APIGatewayProxyResponse> HandleAsync(CloudWatchEvent<object> request, ILambdaContext context)
     {
         try
         {
@@ -52,7 +42,7 @@ public class CustomMetricLambda
             var approximateNumberOfMessages = await GetApproximateNumberOfMessages();
 
             // get number of active ECS tasks
-            var numActiveTasks = await GetNumActiveTasks();
+            var numActiveTasks = 1; //await GetNumActiveTasks();
 
             // metric to be published. number of messages per number of active tasks
             var backlogPerTask = approximateNumberOfMessages / numActiveTasks;
@@ -75,7 +65,6 @@ public class CustomMetricLambda
                 Body = body
             };
         }
-
     }
 
     /**
@@ -86,10 +75,10 @@ public class CustomMetricLambda
     {
             var sqsRequest = new GetQueueAttributesRequest
             {
-                QueueUrl = _queueUrl,
+                QueueUrl = _configuration.GetValue<string>("QUEUE_URL"),
                 AttributeNames =  new List<String> {"ApproximateNumberOfMessages"}
             };
-
+            
             var queueAttributes = await _sqsClient.GetQueueAttributesAsync(sqsRequest);
             int approximateNumberOfMessages = int.Parse(queueAttributes.ApproximateNumberOfMessages.ToString());
             Console.WriteLine("Number of messages in the queue: " + approximateNumberOfMessages);
@@ -107,8 +96,8 @@ public class CustomMetricLambda
             // query ECS to determine number of tasks
             var taskResponse =  await _ecsClient.ListTasksAsync(new Amazon.ECS.Model.ListTasksRequest
             {
-                Cluster = _clusterName,
-                ServiceName = _serviceName,
+                Cluster = _configuration.GetValue<string>("ECS_CLUSTER_NAME"),
+                ServiceName = _configuration.GetValue<string>("ECS_SERVICE_NAME"),
                 DesiredStatus = "RUNNING"
             });
 

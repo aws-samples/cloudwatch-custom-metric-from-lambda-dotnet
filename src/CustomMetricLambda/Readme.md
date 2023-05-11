@@ -38,12 +38,12 @@ If already installed check if new version is available.
 
 Execute unit tests
 ```
-    cd "CustomCloudwatchLambda/test/CustomCloudwatchLambda.Tests"
+    cd "CloudwatchLambda/test/CloudwatchLambda.Tests"
     dotnet test
 ```
 
 Deploy function to AWS Lambda
 ```
-    cd "CustomCloudwatchLambda/src/CustomCloudwatchLambda"
+    cd "CloudwatchLambda/src/CloudwatchLambda"
     dotnet lambda deploy-function
 ```
