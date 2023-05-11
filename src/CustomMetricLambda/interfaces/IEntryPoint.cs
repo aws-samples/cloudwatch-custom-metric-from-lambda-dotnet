@@ -2,9 +2,9 @@ using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.CloudWatchEvents;
 using Amazon.Lambda.Core;
 
-namespace CustomMetricLambda;
+namespace CustomMetric;
 
-internal interface IEntryPoint
+public interface IEntryPoint
 {
     /// <summary>
     /// Entrypoint to lambda.

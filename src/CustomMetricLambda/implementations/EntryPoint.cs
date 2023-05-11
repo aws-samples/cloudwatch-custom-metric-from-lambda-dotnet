@@ -9,7 +9,7 @@ using Amazon.ECS;
 using Amazon.CloudWatch;
 using Microsoft.Extensions.Configuration;
 
-namespace CustomMetricLambda;
+namespace CustomMetric;
 
 internal class EntryPoint : IEntryPoint
 {

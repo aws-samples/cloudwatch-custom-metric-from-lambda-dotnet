@@ -1,14 +1,10 @@
 
-
 using Amazon.XRay.Recorder.Core;
 using Amazon.XRay.Recorder.Handlers.AwsSdk;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-
-
-
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.CloudWatch.Model;
@@ -18,7 +14,7 @@ using Amazon.ECS;
 using Amazon.CloudWatch;
 using Amazon.Lambda.CloudWatchEvents;
 
-namespace CustomMetricLambda;
+namespace CustomMetric;
 
 /// <summary>
 /// Class which provides DI.
