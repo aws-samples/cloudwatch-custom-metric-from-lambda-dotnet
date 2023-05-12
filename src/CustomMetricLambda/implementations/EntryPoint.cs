@@ -42,7 +42,7 @@ internal class EntryPoint : IEntryPoint
             var approximateNumberOfMessages = await GetApproximateNumberOfMessages();
 
             // get number of active ECS tasks
-            var numActiveTasks = 1; //await GetNumActiveTasks();
+            var numActiveTasks = await GetNumActiveTasks();
 
             // metric to be published. number of messages per number of active tasks
             var backlogPerTask = approximateNumberOfMessages / numActiveTasks;
