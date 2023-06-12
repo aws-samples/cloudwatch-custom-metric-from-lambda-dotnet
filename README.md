@@ -67,3 +67,10 @@ CloudWatch metrics, please view: https://docs.aws.amazon.com/AmazonCloudWatch/la
 ## Customize
 This metric is simple to show how to publish a metric and how to utilize the AWS SDK to get metrics on certain services. It is advised to add more datapoints to this statistic so that your scaling can be done appropriately.
 
+## Security
+
+See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
+
+## License
+
+This library is licensed under the MIT-0 License. See the LICENSE file.
