@@ -12,8 +12,9 @@ using Amazon.SQS.Model;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Tasks;
+using CustomMetric;
 
-namespace CustomMetric;
+namespace CustomMetricTest;
 public class CustomMetricLambdaTests
 {
     private readonly ServiceProvider _serviceProvider;
@@ -26,7 +27,7 @@ public class CustomMetricLambdaTests
         _mockCloudWatchClient = new Mock<IAmazonCloudWatch>();
         _mockECSClient = new Mock<IAmazonECS>();
 
-        _mockSqsClient.Setup(x => x.GetQueueAttributesAsync(It.IsAny<GetQueueAttributesRequest>()))
+        _mockSqsClient.Setup(x => x.GetQueueAttributesAsync(It.IsAny<GetQueueAttributesRequest>(), default))
             .ReturnsAsync(new GetQueueAttributesResponse { Attributes = { { "ApproximateNumberOfMessages", "1" } } });
 
         _mockCloudWatchClient.Setup(x => x.PutMetricDataAsync(It.IsAny<PutMetricDataRequest>(), It.IsAny<CancellationToken>()))
@@ -55,7 +56,7 @@ public class CustomMetricLambdaTests
         await lambdaFunction.HandleAsync(new CloudWatchEvent<object>(), null);
 
         // Assert
-        _mockSqsClient.Verify(x => x.GetAttributesAsync(It.IsAny<GetQueueAttributesRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockSqsClient.Verify(x => x.GetQueueAttributesAsync(It.IsAny<GetQueueAttributesRequest>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockCloudWatchClient.Verify(x => x.PutMetricDataAsync(It.IsAny<PutMetricDataRequest>(), It.IsAny<CancellationToken>()), Times.Once);
         _mockECSClient.Verify(x => x.DescribeServicesAsync(It.IsAny<DescribeServicesRequest>(), It.IsAny<CancellationToken>()), Times.Once);
     }

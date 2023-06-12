@@ -11,7 +11,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace CustomMetric;
 
-internal class EntryPoint : IEntryPoint
+public class EntryPoint : IEntryPoint
 {
 
     private readonly IAmazonCloudWatch _cloudwatchClient;
