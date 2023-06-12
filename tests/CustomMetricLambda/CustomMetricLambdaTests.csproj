@@ -28,11 +28,7 @@
 		<PackageReference Include="NUnit.Analyzers" Version="3.6.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.4.2" />
 
-
-
     <ProjectReference Include="../../src/CustomMetricLambda/CloudWatchLambda.csproj" />
-
-
 
   </ItemGroup>
 
