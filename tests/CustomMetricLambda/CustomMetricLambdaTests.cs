@@ -2,7 +2,7 @@ using Amazon.SQS;
 using Amazon.CloudWatch;
 using Amazon.ECS;
 using Moq;
-using Xunit;
+using NUnit.Framework;
 using Amazon.ECS.Model;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.CloudWatchEvents;
@@ -21,32 +21,48 @@ public class CustomMetricLambdaTests
     private readonly Mock<IAmazonSQS> _mockSqsClient;
     private readonly Mock<IAmazonCloudWatch> _mockCloudWatchClient;
     private readonly Mock<IAmazonECS> _mockECSClient;
-
-    CustomMetricLambdaTests(){
+    private readonly IConfiguration _configuration;
+    public CustomMetricLambdaTests(){
         _mockSqsClient = new Mock<IAmazonSQS>();
         _mockCloudWatchClient = new Mock<IAmazonCloudWatch>();
         _mockECSClient = new Mock<IAmazonECS>();
 
         _mockSqsClient.Setup(x => x.GetQueueAttributesAsync(It.IsAny<GetQueueAttributesRequest>(), default))
             .ReturnsAsync(new GetQueueAttributesResponse { Attributes = { { "ApproximateNumberOfMessages", "1" } } });
-
         _mockCloudWatchClient.Setup(x => x.PutMetricDataAsync(It.IsAny<PutMetricDataRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PutMetricDataResponse());
 
-        _mockECSClient.Setup(x => x.DescribeServicesAsync(It.IsAny<DescribeServicesRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new DescribeServicesResponse { Services = new List<Service> { new Service { RunningCount = 1 } } });
+
+        var mockResponse = new ListTasksResponse
+        {
+            TaskArns = new List<string> { "taskArn1" }
+        };
+        _mockECSClient.Setup(x => x.ListTasksAsync(It.IsAny<ListTasksRequest>(), default))
+            .ReturnsAsync(mockResponse);
+
+        IConfiguration baseConfiguration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddEnvironmentVariables()
+            .Build();
+
+        _configuration = new ConfigurationBuilder()
+                   .AddConfiguration(baseConfiguration)
+                   .Build();
 
         var services = new ServiceCollection();
         services.AddSingleton(_mockSqsClient.Object);
         services.AddSingleton(_mockCloudWatchClient.Object);
         services.AddSingleton(_mockECSClient.Object);
+        services.AddSingleton(baseConfiguration);
 
         services.AddSingleton<IEntryPoint, EntryPoint>();
         _serviceProvider = services.BuildServiceProvider();
 
+
+
     }
 
-    [Fact]
+    [Test]
     public async System.Threading.Tasks.Task MyLambdaFunctionShouldGetNumberOfMessagesFromQueueAndPublishMetric()
     {
         // Arrange
@@ -57,8 +73,14 @@ public class CustomMetricLambdaTests
 
         // Assert
         _mockSqsClient.Verify(x => x.GetQueueAttributesAsync(It.IsAny<GetQueueAttributesRequest>(), It.IsAny<CancellationToken>()), Times.Once);
-        _mockCloudWatchClient.Verify(x => x.PutMetricDataAsync(It.IsAny<PutMetricDataRequest>(), It.IsAny<CancellationToken>()), Times.Once);
-        _mockECSClient.Verify(x => x.DescribeServicesAsync(It.IsAny<DescribeServicesRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+        _mockECSClient.Verify(x => x.ListTasksAsync(It.IsAny<ListTasksRequest>(), default), Times.Once);
+
+        _mockCloudWatchClient.Verify(x => x.PutMetricDataAsync(It.Is<PutMetricDataRequest>(request =>
+            request.MetricData.Count == 1 && 
+            request.MetricData[0].MetricName == "QueueDepthPressure" && 
+            request.MetricData[0].Value == 1 
+        ), default), Times.Once);    
+    
     }
 
 
